@@ -12,27 +12,17 @@ app.use(cors());
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// --- 1. SETUP EMAIL WITH IPv4 FORCE ---
+// --- 1. SETUP EMAIL FOR OUTLOOK / HOTMAIL ---
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    // Force the server to use IPv4 (fixes Google timeouts)
-    family: 4, 
+    host: "smtp-mail.outlook.com", // Microsoft's Server
+    port: 587,
+    secure: false, // false for TLS - which Outlook uses
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    // Wait 10 seconds before giving up
-    connectionTimeout: 10000, 
-    logger: true,
-    debug: true
-});
-
-// Immediate Verification Test
-transporter.verify(function (error, success) {
-    if (error) {
-        console.log("❌ CONNECTION TEST FAILED:", error);
-    } else {
-        console.log("✅ SERVER IS READY TO SEND EMAILS");
+    tls: {
+        ciphers:'SSLv3' // Helps with handshake compatibility
     }
 });
 
@@ -55,7 +45,7 @@ app.post('/order', upload.single('myFile'), async (req, res) => {
 
         const mailOptions = {
             from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER,
+            to: process.env.EMAIL_USER, // Sends to yourself
             subject: '🖨️ New Print Order Received!',
             text: `You have a new order.\n\nFile Name: ${req.file.originalname}\nSize: ${req.file.size} bytes`,
             attachments: [
@@ -66,7 +56,7 @@ app.post('/order', upload.single('myFile'), async (req, res) => {
             ]
         };
 
-        console.log("Attempting to send email...");
+        console.log("Attempting to send email via Outlook...");
         await transporter.sendMail(mailOptions);
         console.log("✅ Email sent successfully!");
         res.json({ message: "Order placed successfully!" });

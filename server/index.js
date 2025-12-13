@@ -13,38 +13,46 @@ if (!fs.existsSync('uploads')){
     fs.mkdirSync('uploads');
 }
 
-app.post('/count', upload.single('myFile'), async (req, res) => {
+const nodemailer = require('nodemailer');
+
+// This route handles the actual order
+app.post('/order', upload.single('myFile'), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
+            return res.status(400).json({ error: "No file uploaded" });
         }
 
-        console.log("------------------------------------------------");
-        console.log(`📄 ANALYZING FILE: ${req.file.originalname}`);
-        console.log(`⚖️  Size: ${req.file.size} bytes`);
+        // 1. Setup the email sender
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
 
-        // READ THE RAW BYTES
-        const dataBuffer = fs.readFileSync(req.file.path);
-        
-        // PEEK AT THE FIRST 20 CHARACTERS
-        // A real PDF must start with "%PDF"
-        const headerPreview = dataBuffer.toString('utf8', 0, 20);
-        console.log(`🔍 First 20 chars: "${headerPreview}"`);
-        console.log("------------------------------------------------");
+        // 2. Define the email details
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: process.env.EMAIL_USER, // Sends the email to yourself
+            subject: 'New Print Order Received!',
+            text: `You have a new order.\n\nFile Name: ${req.file.originalname}`,
+            attachments: [
+                {
+                    filename: req.file.originalname,
+                    content: req.file.buffer
+                }
+            ]
+        };
 
-        // Try to load it
-        const pdfDoc = await PDFDocument.load(dataBuffer, { ignoreEncryption: true });
-        const pages = pdfDoc.getPageCount();
-        const totalCost = pages * 3;
+        // 3. Send the email
+        await transporter.sendMail(mailOptions);
 
-        console.log(`✅ Success! Pages: ${pages}`);
-        fs.unlinkSync(req.file.path);
-        res.json({ pages: pages, cost: totalCost });
+        res.json({ message: "Order placed successfully! Check your email." });
 
     } catch (error) {
-        console.log("❌ ERROR:", error.message);
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        res.json({ error: "Invalid PDF. Check terminal for details." });
+        console.error("Email Error:", error);
+        res.status(500).json({ error: "Failed to send email" });
     }
 });
 

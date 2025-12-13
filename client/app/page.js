@@ -22,7 +22,7 @@ export default function Home() {
     formData.append('myFile', file);
 
     try {
-      const response = await fetch('https://myprintshopbackend.onrender.com', {
+      const response = await fetch('https://myprintshopbackend.onrender.com/count', {
         method: 'POST',
         body: formData,
       });

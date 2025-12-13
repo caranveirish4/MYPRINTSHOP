@@ -12,26 +12,27 @@ app.use(cors());
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// --- 1. SETUP EMAIL WITH DIAGNOSTIC LOGGING ---
-// We use the 'service' shorthand which handles ports automatically
+// --- 1. SETUP EMAIL WITH IPv4 FORCE ---
 const transporter = nodemailer.createTransport({
     service: 'gmail',
+    // Force the server to use IPv4 (fixes Google timeouts)
+    family: 4, 
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    logger: true, // Log information to console
-    debug: true   // Include SMTP traffic in logs
+    // Wait 10 seconds before giving up
+    connectionTimeout: 10000, 
+    logger: true,
+    debug: true
 });
 
-// --- 2. IMMEDIATE CONNECTION TEST ---
-// This runs the moment the server starts!
+// Immediate Verification Test
 transporter.verify(function (error, success) {
     if (error) {
-        console.log("❌ CRITICAL ERROR: Server cannot connect to Gmail!");
-        console.log(error);
+        console.log("❌ CONNECTION TEST FAILED:", error);
     } else {
-        console.log("✅ SUCCESS: Server is ready to send emails.");
+        console.log("✅ SERVER IS READY TO SEND EMAILS");
     }
 });
 

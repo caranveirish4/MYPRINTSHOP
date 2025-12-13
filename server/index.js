@@ -7,19 +7,37 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. Enable CORS
 app.use(cors()); 
 
-// 2. Configure Uploads to use MEMORY (RAM)
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// --- ROUTE 1: Count Pages ---
+// --- 1. SETUP EMAIL WITH DIAGNOSTIC LOGGING ---
+// We use the 'service' shorthand which handles ports automatically
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    logger: true, // Log information to console
+    debug: true   // Include SMTP traffic in logs
+});
+
+// --- 2. IMMEDIATE CONNECTION TEST ---
+// This runs the moment the server starts!
+transporter.verify(function (error, success) {
+    if (error) {
+        console.log("❌ CRITICAL ERROR: Server cannot connect to Gmail!");
+        console.log(error);
+    } else {
+        console.log("✅ SUCCESS: Server is ready to send emails.");
+    }
+});
+
 app.post('/count', upload.single('myFile'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
+        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
         const pdfDoc = await PDFDocument.load(req.file.buffer);
         const pages = pdfDoc.getPageCount();
         const cost = pages * 3;
@@ -30,23 +48,9 @@ app.post('/count', upload.single('myFile'), async (req, res) => {
     }
 });
 
-// --- ROUTE 2: Place Order (UPDATED) ---
 app.post('/order', upload.single('myFile'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
-
-        // --- CHANGE IS HERE: Using Port 587 ---
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,              // <--- Standard Port
-            secure: false,          // <--- Must be false for Port 587
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
+        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
         const mailOptions = {
             from: process.env.EMAIL_USER,
@@ -61,6 +65,7 @@ app.post('/order', upload.single('myFile'), async (req, res) => {
             ]
         };
 
+        console.log("Attempting to send email...");
         await transporter.sendMail(mailOptions);
         console.log("✅ Email sent successfully!");
         res.json({ message: "Order placed successfully!" });

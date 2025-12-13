@@ -3,7 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const { PDFDocument } = require('pdf-lib');
 const nodemailer = require('nodemailer');
-require('dotenv').config(); // Good practice to have, just in case
+require('dotenv').config(); 
 
 const app = express();
 
@@ -11,7 +11,7 @@ const app = express();
 app.use(cors()); 
 
 // 2. Configure Uploads to use MEMORY (RAM) instead of Disk
-// This is crucial for "req.file.buffer" to work in the email
+// This is crucial for "req.file.buffer" to work in the email attachment
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -44,16 +44,19 @@ app.post('/order', upload.single('myFile'), async (req, res) => {
             return res.status(400).json({ error: "No file uploaded" });
         }
 
-        // Setup the email sender
+        // 1. Setup the email sender (UPDATED FOR RENDER)
+        // We use 'host' and 'port: 465' with 'secure: true' to prevent Timeouts
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // true for 465, false for other ports
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS
             }
         });
 
-        // Define the email details
+        // 2. Define the email details
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER, // Send to yourself
@@ -62,18 +65,19 @@ app.post('/order', upload.single('myFile'), async (req, res) => {
             attachments: [
                 {
                     filename: req.file.originalname,
-                    content: req.file.buffer // This now works because we used memoryStorage()
+                    content: req.file.buffer // This comes from memoryStorage
                 }
             ]
         };
 
-        // Send the email
+        // 3. Send the email
         await transporter.sendMail(mailOptions);
 
+        console.log("✅ Email sent successfully for:", req.file.originalname);
         res.json({ message: "Order placed successfully!" });
 
     } catch (error) {
-        console.error("Email Error:", error);
+        console.error("❌ Email Error:", error);
         res.status(500).json({ error: "Failed to send email" });
     }
 });

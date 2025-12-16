@@ -7,25 +7,35 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [orderStatus, setOrderStatus] = useState("");
   const [phone, setPhone] = useState(""); 
-  
-  // Ref to control the form
+  const [orderId, setOrderId] = useState(null); // Store the unique ID
+
   const formRef = useRef(null);
 
-  // ✅ YOUR EMAIL - Make sure this is correct!
+  // ✅ YOUR EMAIL
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
+  
+  // ✅ YOUR WHATSAPP NUMBER (For customers to message you)
+  // Format: CountryCode + Number (e.g., 919876543210)
+  const MY_WHATSAPP = "917670964247"; 
+
+  // 1. Helper function to generate a Unique Order ID
+  const generateOrderId = () => {
+    // Generates something like "TPS-8492"
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    return `TPS-${randomNum}`;
+  };
 
   const handleFileChange = (e) => {
     if(e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setResult(null); 
       setOrderStatus("");
+      setOrderId(null);
     }
   };
 
   const calculatePrice = async (e) => {
-    // Prevent the form from submitting when clicking "Check Price"
     e.preventDefault(); 
-    
     if (!file) return alert("Please select a PDF file first!");
     setLoading(true);
     setResult(null); 
@@ -38,7 +48,6 @@ export default function Home() {
         method: 'POST',
         body: formData,
       });
-      
       const data = await response.json();
       if (data.error) {
         alert("⚠️ Server Error: " + data.error);
@@ -55,19 +64,31 @@ export default function Home() {
     if (!file) return alert("Please upload a file first!");
     if (!phone || phone.length < 10) return alert("Please enter a valid Phone Number!");
     
-    // We update the Status to "Sending..."
+    // Generate the ID right before sending
+    const newId = generateOrderId();
+    setOrderId(newId);
     setOrderStatus("Sending...");
 
-    // We submit the form programmatically
+    // Update the hidden input with the new ID manually before submit
+    const orderIdInput = formRef.current.querySelector('input[name="Order_ID"]');
+    if (orderIdInput) orderIdInput.value = newId;
+
     if(formRef.current) {
         formRef.current.submit();
     }
     
-    // We fake the "Success" message after 2 seconds because the hidden frame handles the rest
     setTimeout(() => {
         setOrderStatus("Sent!");
-        alert("✅ Order Sent! Please check your email for the file.");
+        // We do NOT alert here anymore, we show the Success Screen instead
     }, 2000);
+  };
+
+  // Helper to open WhatsApp with the details
+  const sendWhatsApp = () => {
+    if (!orderId) return;
+    const message = `Hello! I just placed Order *${orderId}*.\n\n📄 File: ${file.name}\n💰 Amount: ₹${result.cost}\n\nPlease confirm when printed!`;
+    const url = `https://wa.me/${MY_WHATSAPP}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -82,103 +103,111 @@ export default function Home() {
 
         <div className="p-8">
             
-            {/* THE TRICK: A hidden iframe. 
-                When the form submits, the result goes here, so the page doesn't reload.
-            */}
-            <iframe name="hidden_iframe" style={{display:'none'}}></iframe>
-
-            {/* THE REAL FORM: 
-                Notice target="hidden_iframe". This sends data to the invisible box.
-            */}
-            <form 
-                ref={formRef}
-                action={`https://formsubmit.co/${MY_EMAIL}`} 
-                method="POST" 
-                encType="multipart/form-data"
-                target="hidden_iframe"
-            >
-                {/* Hidden Settings for FormSubmit */}
-                <input type="hidden" name="_subject" value="New Print Order with File!" />
-                <input type="hidden" name="_captcha" value="false" />
-                <input type="hidden" name="_template" value="table" />
-                
-                {/* We send the detailed message as a hidden field */}
-                <input type="hidden" name="Order Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
-
-
-                {/* Step 1: File Upload */}
-                <div className="mb-6">
-                    <label className="block text-gray-700 font-bold mb-2">1. Upload your PDF</label>
-                    <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition text-center cursor-pointer group">
-                    {/* The Input MUST have name="attachment" for the file to show up */}
-                    <input 
-                        type="file" 
-                        name="attachment" 
-                        accept=".pdf" 
-                        onChange={handleFileChange} 
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <div className="text-gray-500 group-hover:text-blue-600">
-                        <p className="text-2xl mb-2">📂</p>
-                        <p className="font-medium text-sm">
-                        {file ? `Selected: ${file.name}` : "Click or Drag PDF here"}
-                        </p>
+            {/* If Order is SENT, show Success Screen */}
+            {orderStatus === "Sent!" ? (
+                <div className="text-center animate-fade-in-up">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-4xl">✅</span>
                     </div>
+                    <h2 className="text-2xl font-bold text-gray-800">Order Placed!</h2>
+                    <p className="text-gray-600 mt-2">Your Order ID:</p>
+                    <div className="bg-gray-100 p-3 rounded-lg font-mono text-xl font-bold tracking-widest my-2 select-all">
+                        {orderId}
                     </div>
-                </div>
+                    <p className="text-sm text-gray-500 mb-6">Current Status: <span className="text-blue-600 font-bold">Doc Sent 📨</span></p>
 
-                {/* Check Price Button (This is NOT a submit button) */}
-                {!result && (
                     <button 
-                    onClick={calculatePrice}
-                    disabled={loading}
-                    className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-lg disabled:bg-gray-400"
+                        onClick={sendWhatsApp}
+                        className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2"
                     >
-                    {loading ? "Calculating Pages..." : "Check Price"}
+                        <span>💬</span> Send to WhatsApp
                     </button>
-                )}
-
-                {/* Result & Phone Input */}
-                {result && (
-                    <div className="animate-fade-in-up">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center">
-                        <p className="text-gray-600 text-sm uppercase font-bold tracking-wide">Estimated Cost</p>
-                        <h2 className="text-4xl font-extrabold text-green-700 my-1">₹{result.cost}</h2>
-                        <p className="text-gray-500 text-sm">{result.pages} Pages x ₹3/page</p>
-                    </div>
-
-                    <div className="mb-6">
-                        <label className="block text-gray-700 font-bold mb-2">2. Your WhatsApp Number</label>
-                        {/* We give this input a name so it appears in the email */}
-                        <input 
-                        type="tel" 
-                        name="Phone Number"
-                        placeholder="e.g. 9876543210"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-lg rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-3"
-                        />
-                    </div>
-
-                    {/* Final Place Order Button */}
-                    <button
-                        type="button" 
-                        onClick={handleOrderSubmit}
-                        disabled={orderStatus === "Sending..." || orderStatus === "Sent!"}
-                        className={`w-full font-bold py-4 rounded-lg shadow-lg text-white transition transform active:scale-95 ${
-                        orderStatus === "Sent!" 
-                            ? "bg-gray-500 cursor-not-allowed" 
-                            : "bg-green-600 hover:bg-green-700"
-                        }`}
+                    <p className="text-xs text-gray-400 mt-3">Click above to notify us instantly!</p>
+                </div>
+            ) : (
+                /* OTHERWISE, show the Normal Form */
+                <>
+                    <iframe name="hidden_iframe" style={{display:'none'}}></iframe>
+                    <form 
+                        ref={formRef}
+                        action={`https://formsubmit.co/${MY_EMAIL}`} 
+                        method="POST" 
+                        encType="multipart/form-data"
+                        target="hidden_iframe"
                     >
-                        {orderStatus === "Sending..." ? "Sending Order..." : (orderStatus === "Sent!" ? "✅ Order Sent Successfully!" : "🚀 Place Order Now")}
-                    </button>
-                    </div>
-                )}
-            </form>
+                        <input type="hidden" name="_subject" value={`New Order ${orderId || ''}`} />
+                        <input type="hidden" name="_captcha" value="false" />
+                        <input type="hidden" name="_template" value="table" />
+                        
+                        {/* Hidden Inputs for Email Details */}
+                        <input type="hidden" name="Order_ID" value="" /> {/* Will be filled by JS */}
+                        <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
+
+                        {/* Step 1: File Upload */}
+                        <div className="mb-6">
+                            <label className="block text-gray-700 font-bold mb-2">1. Upload your PDF</label>
+                            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition text-center cursor-pointer group">
+                            <input 
+                                type="file" 
+                                name="attachment" 
+                                accept=".pdf" 
+                                onChange={handleFileChange} 
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="text-gray-500 group-hover:text-blue-600">
+                                <p className="text-2xl mb-2">📂</p>
+                                <p className="font-medium text-sm">
+                                {file ? `Selected: ${file.name}` : "Click or Drag PDF here"}
+                                </p>
+                            </div>
+                            </div>
+                        </div>
+
+                        {!result && (
+                            <button 
+                            onClick={calculatePrice}
+                            disabled={loading}
+                            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-lg disabled:bg-gray-400"
+                            >
+                            {loading ? "Calculating..." : "Check Price"}
+                            </button>
+                        )}
+
+                        {result && (
+                            <div className="animate-fade-in-up">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center">
+                                <p className="text-gray-600 text-sm uppercase font-bold tracking-wide">Estimated Cost</p>
+                                <h2 className="text-4xl font-extrabold text-green-700 my-1">₹{result.cost}</h2>
+                                <p className="text-gray-500 text-sm">{result.pages} Pages x ₹3/page</p>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-gray-700 font-bold mb-2">2. Your Phone Number</label>
+                                <input 
+                                type="tel" 
+                                name="Phone_Number"
+                                placeholder="e.g. 9876543210"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-lg rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-3"
+                                />
+                            </div>
+
+                            <button
+                                type="button" 
+                                onClick={handleOrderSubmit}
+                                disabled={orderStatus === "Sending..."}
+                                className="w-full bg-blue-600 hover:bg-blue-700 font-bold py-4 rounded-lg shadow-lg text-white transition transform active:scale-95"
+                            >
+                                {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
+                            </button>
+                            </div>
+                        )}
+                    </form>
+                </>
+            )}
         </div>
         
-        {/* Footer */}
         <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
           <p className="text-xs text-gray-500">© 2024 Tirupati Print Service</p>
         </div>

@@ -8,7 +8,7 @@ export default function Home() {
   const [orderStatus, setOrderStatus] = useState("");
 
   // 🔴 IMPORTANT: REPLACE THIS WITH YOUR REAL EMAIL ADDRESS 🔴
-  const MY_EMAIL = "YOUR_REAL_EMAIL@gmail.com"; 
+  const MY_EMAIL = "charanabbagoni926@gmail.com"; 
 
   const handleFileChange = (e) => {
     if(e.target.files) {

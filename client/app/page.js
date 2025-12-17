@@ -187,3 +187,21 @@ export default function Home() {
                                 type="button" 
                                 onClick={handleOrderSubmit}
                                 disabled={orderStatus === "Sending..."}
+                                className="w-full bg-blue-600 hover:bg-blue-700 font-bold py-4 rounded-lg shadow-lg text-white transition transform active:scale-95"
+                            >
+                                {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
+                            </button>
+                            </div>
+                        )}
+                    </form>
+                </>
+            )}
+        </div>
+        
+        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
+          <p className="text-xs text-gray-500">© 2024 Tirupati Print Service</p>
+        </div>
+      </div>
+    </div>
+  );
+}

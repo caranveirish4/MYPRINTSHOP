@@ -15,7 +15,7 @@ export default function Home() {
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
   
   // ✅ YOUR WHATSAPP NUMBER
-  const MY_WHATSAPP = "919876543210"; 
+  const MY_WHATSAPP = "917995460846"; 
 
   const generateOrderId = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);

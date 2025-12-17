@@ -9,7 +9,7 @@ export default function Home() {
   const [phone, setPhone] = useState(""); 
   const [orderId, setOrderId] = useState(null);
   
-  // 📍 Address States
+  // Address States
   const [locationLink, setLocationLink] = useState("");
   const [addressDetails, setAddressDetails] = useState({
     hostel: "",
@@ -19,7 +19,9 @@ export default function Home() {
   const [locLoading, setLocLoading] = useState(false);
 
   const formRef = useRef(null);
+  // 🔴 CHANGE THIS TO YOUR EMAIL
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
+  // 🔴 CHANGE THIS TO YOUR NUMBER (No + sign)
   const MY_WHATSAPP = "919876543210"; 
 
   const generateOrderId = () => {
@@ -43,7 +45,7 @@ export default function Home() {
     }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition((position) => {
-      const link = `http://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+      const link = `http://maps.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
       setLocationLink(link);
       setLocLoading(false);
     }, () => {
@@ -62,10 +64,12 @@ export default function Home() {
     formData.append('myFile', file);
 
     try {
+      // ⚠️ IMPORTANT: Sending request to backend
       const response = await fetch('https://myprintshopbackend.onrender.com/count', {
         method: 'POST',
         body: formData,
       });
+      
       const data = await response.json();
       if (data.error) {
         alert("⚠️ Server Error: " + data.error);
@@ -73,7 +77,9 @@ export default function Home() {
         setResult(data);
       }
     } catch (error) {
-      alert("❌ Connection Error: Backend is not reachable.");
+      // Friendly error if server is sleeping
+      alert("💤 The server is waking up! Please wait 30 seconds and click 'Check Price' again.");
+      console.error(error);
     }
     setLoading(false);
   };
@@ -116,10 +122,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center p-4 sm:p-6 font-sans text-gray-800">
       <div className="w-full max-w-lg bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
         
-        {/* Modern Gradient Header */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10 blur-xl"></div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight relative z-10">Tirupati Print Service</h1>
@@ -168,7 +174,7 @@ export default function Home() {
                         <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
                         <input type="hidden" name="Address_Full" value="" />
 
-                        {/* Step 1: Trendy File Upload */}
+                        {/* Step 1: File Upload */}
                         <div className="mb-8">
                             <label className="block text-gray-700 font-bold mb-3 text-sm uppercase tracking-wide">1. Upload File</label>
                             <div className="relative group">
@@ -218,7 +224,6 @@ export default function Home() {
                                 <div className="space-y-4 mb-8">
                                     <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">2. Delivery Details</h3>
                                     
-                                    {/* GPS Button */}
                                     <button 
                                         type="button"
                                         onClick={getLocation}
@@ -235,14 +240,14 @@ export default function Home() {
                                         <input 
                                             type="text" 
                                             placeholder="Hostel / Building"
-                                            className="col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                            className="col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
                                             value={addressDetails.hostel}
                                             onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})}
                                         />
                                         <input 
                                             type="text" 
                                             placeholder="Room No"
-                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
                                             value={addressDetails.room}
                                             onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})}
                                         />
@@ -250,7 +255,7 @@ export default function Home() {
                                             type="tel" 
                                             name="Phone_Number"
                                             placeholder="Phone No"
-                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
                                         />
@@ -258,7 +263,7 @@ export default function Home() {
                                     <input 
                                         type="text" 
                                         placeholder="Note (e.g. Leave at gate)"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
                                         value={addressDetails.instructions}
                                         onChange={(e) => setAddressDetails({...addressDetails, instructions: e.target.value})}
                                     />

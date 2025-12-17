@@ -20,7 +20,7 @@ export default function Home() {
 
   const formRef = useRef(null);
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
-  const MY_WHATSAPP = "9179954608946"; 
+  const MY_WHATSAPP = "917995460846"; 
 
   const generateOrderId = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);

@@ -19,9 +19,11 @@ export default function Home() {
   const [locLoading, setLocLoading] = useState(false);
 
   const formRef = useRef(null);
-  // 🔴 CHANGE THIS TO YOUR EMAIL
-  const MY_EMAIL = "charanabbagoni926@gmail.com"; 
-  // 🔴 CHANGE THIS TO YOUR NUMBER (No + sign)
+
+  // ✅ YOUR WEB3FORMS ACCESS KEY (Inserted)
+  const ACCESS_KEY = "57e361ef-3817-4d9f-95c1-e5cdaf4a7d3f"; 
+
+  // ✅ YOUR WHATSAPP NUMBER (Inserted with 91 code)
   const MY_WHATSAPP = "917995460846"; 
 
   const generateOrderId = () => {
@@ -45,7 +47,7 @@ export default function Home() {
     }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition((position) => {
-      const link = `http://maps.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+      const link = `http://googleusercontent.com/maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
       setLocationLink(link);
       setLocLoading(false);
     }, () => {
@@ -64,7 +66,6 @@ export default function Home() {
     formData.append('myFile', file);
 
     try {
-      // ⚠️ IMPORTANT: Sending request to backend
       const response = await fetch('https://myprintshopbackend.onrender.com/count', {
         method: 'POST',
         body: formData,
@@ -77,7 +78,6 @@ export default function Home() {
         setResult(data);
       }
     } catch (error) {
-      // Friendly error if server is sleeping
       alert("💤 The server is waking up! Please wait 30 seconds and click 'Check Price' again.");
       console.error(error);
     }
@@ -93,8 +93,8 @@ export default function Home() {
     setOrderId(newId);
     setOrderStatus("Sending...");
 
-    const orderIdInput = formRef.current.querySelector('input[name="Order_ID"]');
-    if (orderIdInput) orderIdInput.value = newId;
+    const orderIdInput = formRef.current.querySelector('input[name="subject"]');
+    if (orderIdInput) orderIdInput.value = `New Order ${newId}`;
 
     const fullAddress = `
     📍 GPS: ${locationLink || "Not Shared"}
@@ -142,7 +142,6 @@ export default function Home() {
                     <h2 className="text-3xl font-bold text-gray-800 mb-2">Order Success!</h2>
                     <p className="text-gray-500 mb-6">We have received your file.</p>
                     
-                    {/* High Contrast Order ID Card */}
                     <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-lg transform rotate-1 hover:rotate-0 transition duration-300">
                         <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Your Order ID</p>
                         <p className="font-mono text-3xl font-black tracking-wider select-all">{orderId}</p>
@@ -160,17 +159,19 @@ export default function Home() {
             ) : (
                 <>
                     <iframe name="hidden_iframe" style={{display:'none'}}></iframe>
+                    {/* ✅ WEB3FORMS CONFIGURATION */}
                     <form 
                         ref={formRef}
-                        action={`https://formsubmit.co/${MY_EMAIL}`} 
+                        action="https://api.web3forms.com/submit" 
                         method="POST" 
                         encType="multipart/form-data"
                         target="hidden_iframe"
                     >
-                        <input type="hidden" name="_subject" value={`New Order ${orderId || ''}`} />
-                        <input type="hidden" name="_captcha" value="false" />
-                        <input type="hidden" name="_template" value="table" />
-                        <input type="hidden" name="Order_ID" value="" />
+                        <input type="hidden" name="access_key" value={ACCESS_KEY} />
+                        <input type="hidden" name="subject" value={`New Order ${orderId || ''}`} />
+                        <input type="hidden" name="from_name" value="Tirupati Print App" />
+                        
+                        <input type="hidden" name="Order_ID" value={orderId} />
                         <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
                         <input type="hidden" name="Address_Full" value="" />
 

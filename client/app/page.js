@@ -9,7 +9,7 @@ export default function Home() {
   const [phone, setPhone] = useState(""); 
   const [orderId, setOrderId] = useState(null);
   
-  // 📍 NEW: Address States
+  // 📍 Address States
   const [locationLink, setLocationLink] = useState("");
   const [addressDetails, setAddressDetails] = useState({
     hostel: "",
@@ -20,7 +20,7 @@ export default function Home() {
 
   const formRef = useRef(null);
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
-  const MY_WHATSAPP = "917995460846"; 
+  const MY_WHATSAPP = "919876543210"; 
 
   const generateOrderId = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -36,7 +36,6 @@ export default function Home() {
     }
   };
 
-  // 📍 NEW: Function to get GPS Location
   const getLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -44,11 +43,11 @@ export default function Home() {
     }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition((position) => {
-      const link = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+      const link = `http://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
       setLocationLink(link);
       setLocLoading(false);
     }, () => {
-      alert("Unable to retrieve your location. Please type it manually.");
+      alert("Unable to retrieve location. Please type it manually.");
       setLocLoading(false);
     });
   };
@@ -91,7 +90,6 @@ export default function Home() {
     const orderIdInput = formRef.current.querySelector('input[name="Order_ID"]');
     if (orderIdInput) orderIdInput.value = newId;
 
-    // 📍 Combine address into one string for the email
     const fullAddress = `
     📍 GPS: ${locationLink || "Not Shared"}
     🏠 Address: ${addressDetails.hostel}, Room ${addressDetails.room}
@@ -107,49 +105,51 @@ export default function Home() {
     
     setTimeout(() => {
         setOrderStatus("Sent!");
-    }, 2000);
+    }, 2500);
   };
 
   const sendWhatsApp = () => {
     if (!orderId) return;
-    // 📍 Add address to WhatsApp message
     const message = `Hello! I just placed Order *${orderId}*.\n\n📄 File: ${file.name}\n💰 Amount: ₹${result.cost}\n\n📍 *Delivery Location:*\n${addressDetails.hostel}, Room ${addressDetails.room}\n${locationLink ? `🔗 Map: ${locationLink}` : ''}\n\nPlease confirm!`;
     const url = `https://wa.me/${MY_WHATSAPP}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-lg bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
         
-        <div className="bg-blue-600 p-6 text-center">
-          <h1 className="text-3xl font-bold text-white">Tirupati Print Service 🖨️</h1>
-          <p className="text-blue-100 mt-2">Fast & Affordable Document Printing</p>
+        {/* Modern Gradient Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10 blur-xl"></div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight relative z-10">Tirupati Print Service</h1>
+          <p className="text-blue-100 mt-2 font-medium relative z-10">Premium Printing • Student Prices</p>
         </div>
 
         <div className="p-8">
             
             {orderStatus === "Sent!" ? (
                 <div className="text-center animate-fade-in-up">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-4xl">✅</span>
+                    <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <span className="text-5xl">✅</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800">Order Placed!</h2>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-2">Order Success!</h2>
+                    <p className="text-gray-500 mb-6">We have received your file.</p>
                     
-                    {/* High Contrast Order ID */}
-                    <div className="bg-blue-50 border-2 border-blue-200 text-blue-900 p-4 rounded-lg font-mono text-2xl font-black tracking-widest my-4 select-all shadow-sm">
-                        {orderId}
+                    {/* High Contrast Order ID Card */}
+                    <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-lg transform rotate-1 hover:rotate-0 transition duration-300">
+                        <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Your Order ID</p>
+                        <p className="font-mono text-3xl font-black tracking-wider select-all">{orderId}</p>
                     </div>
 
-                    <p className="text-sm text-gray-500 mb-6">Current Status: <span className="text-blue-600 font-bold">Doc Sent 📨</span></p>
+                    <p className="text-sm text-gray-500 mt-6 mb-4">Click below to send precise location details</p>
 
                     <button 
                         onClick={sendWhatsApp}
-                        className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2"
+                        className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-green-500/30 transition transform hover:-translate-y-1 flex items-center justify-center gap-2"
                     >
-                        <span>💬</span> Send Location to WhatsApp
+                        <span>💬</span> Send Location on WhatsApp
                     </button>
-                    <p className="text-xs text-gray-400 mt-3">Click above to send your precise location!</p>
                 </div>
             ) : (
                 <>
@@ -166,25 +166,29 @@ export default function Home() {
                         <input type="hidden" name="_template" value="table" />
                         <input type="hidden" name="Order_ID" value="" />
                         <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
-                        {/* 📍 Hidden input to send full address to email */}
                         <input type="hidden" name="Address_Full" value="" />
 
-                        <div className="mb-6">
-                            <label className="block text-gray-700 font-bold mb-2">1. Upload your PDF</label>
-                            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition text-center cursor-pointer group">
-                            <input 
-                                type="file" 
-                                name="attachment" 
-                                accept=".pdf" 
-                                onChange={handleFileChange} 
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <div className="text-gray-500 group-hover:text-blue-600">
-                                <p className="text-2xl mb-2">📂</p>
-                                <p className="font-medium text-sm">
-                                {file ? `Selected: ${file.name}` : "Click or Drag PDF here"}
-                                </p>
-                            </div>
+                        {/* Step 1: Trendy File Upload */}
+                        <div className="mb-8">
+                            <label className="block text-gray-700 font-bold mb-3 text-sm uppercase tracking-wide">1. Upload File</label>
+                            <div className="relative group">
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-300 to-purple-300 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
+                                <div className="relative border-2 border-dashed border-indigo-200 bg-indigo-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-white transition-colors">
+                                    <input 
+                                        type="file" 
+                                        name="attachment" 
+                                        accept=".pdf" 
+                                        onChange={handleFileChange} 
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <div className="text-indigo-400 group-hover:text-indigo-600 transition-colors">
+                                        <div className="text-4xl mb-3">📂</div>
+                                        <p className="font-semibold text-gray-700">
+                                            {file ? <span className="text-indigo-600">{file.name}</span> : "Tap to Upload PDF"}
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-1">{file ? "File selected" : "Max 25MB"}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -192,75 +196,82 @@ export default function Home() {
                             <button 
                             onClick={calculatePrice}
                             disabled={loading}
-                            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-lg disabled:bg-gray-400"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                            {loading ? "Calculating..." : "Check Price"}
+                            {loading ? "Calculating Price..." : "Check Price ⚡"}
                             </button>
                         )}
 
                         {result && (
                             <div className="animate-fade-in-up">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center">
-                                <p className="text-gray-600 text-sm uppercase font-bold tracking-wide">Estimated Cost</p>
-                                <h2 className="text-4xl font-extrabold text-green-700 my-1">₹{result.cost}</h2>
-                                <p className="text-gray-500 text-sm">{result.pages} Pages x ₹3/page</p>
-                            </div>
+                                {/* Price Card */}
+                                <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-8 text-center shadow-lg relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-bl-lg">BEST VALUE</div>
+                                    <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Estimated Cost</p>
+                                    <h2 className="text-5xl font-black text-gray-800 tracking-tight">₹{result.cost}</h2>
+                                    <div className="inline-block bg-gray-100 rounded-full px-4 py-1 mt-3">
+                                        <p className="text-gray-600 text-xs font-medium">{result.pages} Pages × ₹3/page</p>
+                                    </div>
+                                </div>
 
-                            {/* 📍 NEW: Address Section */}
-                            <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
-                                <h3 className="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">📍 Delivery Details</h3>
-                                
-                                {/* GPS Button */}
-                                <button 
-                                    type="button"
-                                    onClick={getLocation}
-                                    className={`w-full py-2 mb-4 rounded border flex items-center justify-center gap-2 text-sm font-medium transition ${locationLink ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}
-                                >
-                                    {locLoading ? "Getting Location..." : (locationLink ? "✅ Location Pinned!" : "📍 Use Current Location")}
-                                </button>
+                                {/* Address Section */}
+                                <div className="space-y-4 mb-8">
+                                    <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">2. Delivery Details</h3>
+                                    
+                                    {/* GPS Button */}
+                                    <button 
+                                        type="button"
+                                        onClick={getLocation}
+                                        className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition duration-200 ${
+                                            locationLink 
+                                            ? 'bg-green-50 border-green-200 text-green-700' 
+                                            : 'border-blue-100 text-blue-600 hover:bg-blue-50'
+                                        }`}
+                                    >
+                                        {locLoading ? "Detecting..." : (locationLink ? "✅ Location Pinned" : "📍 Use Current Location")}
+                                    </button>
 
-                                {/* Address Fields */}
-                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Hostel / Building"
+                                            className="col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                            value={addressDetails.hostel}
+                                            onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})}
+                                        />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Room No"
+                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                            value={addressDetails.room}
+                                            onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})}
+                                        />
+                                        <input 
+                                            type="tel" 
+                                            name="Phone_Number"
+                                            placeholder="Phone No"
+                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                        />
+                                    </div>
                                     <input 
                                         type="text" 
-                                        placeholder="Hostel / Building Name"
-                                        className="col-span-2 p-2 border rounded text-sm"
-                                        value={addressDetails.hostel}
-                                        onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})}
-                                    />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Room / Flat No."
-                                        className="p-2 border rounded text-sm"
-                                        value={addressDetails.room}
-                                        onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})}
-                                    />
-                                    <input 
-                                        type="tel" 
-                                        name="Phone_Number"
-                                        placeholder="Phone Number"
-                                        className="p-2 border rounded text-sm"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="Note (e.g. Leave at gate)"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                        value={addressDetails.instructions}
+                                        onChange={(e) => setAddressDetails({...addressDetails, instructions: e.target.value})}
                                     />
                                 </div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Instructions (e.g., Leave at gate)"
-                                    className="w-full p-2 border rounded text-sm"
-                                    value={addressDetails.instructions}
-                                    onChange={(e) => setAddressDetails({...addressDetails, instructions: e.target.value})}
-                                />
-                            </div>
 
-                            <button
-                                type="button" 
-                                onClick={handleOrderSubmit}
-                                disabled={orderStatus === "Sending..."}
-                                className="w-full bg-blue-600 hover:bg-blue-700 font-bold py-4 rounded-lg shadow-lg text-white transition transform active:scale-95"
-                            >
-                                {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
-                            </button>
+                                <button
+                                    type="button" 
+                                    onClick={handleOrderSubmit}
+                                    disabled={orderStatus === "Sending..."}
+                                    className="w-full bg-gray-900 text-white font-bold py-5 rounded-xl shadow-xl hover:shadow-2xl hover:bg-black transition transform active:scale-95"
+                                >
+                                    {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
+                                </button>
                             </div>
                         )}
                     </form>
@@ -268,8 +279,8 @@ export default function Home() {
             )}
         </div>
         
-        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
-          <p className="text-xs text-gray-500">© 2024 Tirupati Print Service</p>
+        <div className="bg-gray-50/50 p-4 text-center border-t border-gray-100">
+          <p className="text-xs text-gray-400 font-medium">© 2025 Tirupati Print Service</p>
         </div>
       </div>
     </div>

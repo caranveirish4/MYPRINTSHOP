@@ -8,14 +8,19 @@ export default function Home() {
   const [orderStatus, setOrderStatus] = useState("");
   const [phone, setPhone] = useState(""); 
   const [orderId, setOrderId] = useState(null);
+  
+  // 📍 NEW: Address States
+  const [locationLink, setLocationLink] = useState("");
+  const [addressDetails, setAddressDetails] = useState({
+    hostel: "",
+    room: "",
+    instructions: ""
+  });
+  const [locLoading, setLocLoading] = useState(false);
 
   const formRef = useRef(null);
-
-  // ✅ YOUR EMAIL
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
-  
-  // ✅ YOUR WHATSAPP NUMBER
-  const MY_WHATSAPP = "917995460846"; 
+  const MY_WHATSAPP = "9179954608946"; 
 
   const generateOrderId = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -29,6 +34,23 @@ export default function Home() {
       setOrderStatus("");
       setOrderId(null);
     }
+  };
+
+  // 📍 NEW: Function to get GPS Location
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocLoading(true);
+    navigator.geolocation.getCurrentPosition((position) => {
+      const link = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+      setLocationLink(link);
+      setLocLoading(false);
+    }, () => {
+      alert("Unable to retrieve your location. Please type it manually.");
+      setLocLoading(false);
+    });
   };
 
   const calculatePrice = async (e) => {
@@ -60,13 +82,24 @@ export default function Home() {
   const handleOrderSubmit = () => {
     if (!file) return alert("Please upload a file first!");
     if (!phone || phone.length < 10) return alert("Please enter a valid Phone Number!");
-    
+    if (!addressDetails.hostel || !addressDetails.room) return alert("Please enter your Hostel/Building and Room Number.");
+
     const newId = generateOrderId();
     setOrderId(newId);
     setOrderStatus("Sending...");
 
     const orderIdInput = formRef.current.querySelector('input[name="Order_ID"]');
     if (orderIdInput) orderIdInput.value = newId;
+
+    // 📍 Combine address into one string for the email
+    const fullAddress = `
+    📍 GPS: ${locationLink || "Not Shared"}
+    🏠 Address: ${addressDetails.hostel}, Room ${addressDetails.room}
+    📝 Note: ${addressDetails.instructions || "None"}
+    `;
+    
+    const addressInput = formRef.current.querySelector('input[name="Address_Full"]');
+    if (addressInput) addressInput.value = fullAddress;
 
     if(formRef.current) {
         formRef.current.submit();
@@ -79,7 +112,8 @@ export default function Home() {
 
   const sendWhatsApp = () => {
     if (!orderId) return;
-    const message = `Hello! I just placed Order *${orderId}*.\n\n📄 File: ${file.name}\n💰 Amount: ₹${result.cost}\n\nPlease confirm when printed!`;
+    // 📍 Add address to WhatsApp message
+    const message = `Hello! I just placed Order *${orderId}*.\n\n📄 File: ${file.name}\n💰 Amount: ₹${result.cost}\n\n📍 *Delivery Location:*\n${addressDetails.hostel}, Room ${addressDetails.room}\n${locationLink ? `🔗 Map: ${locationLink}` : ''}\n\nPlease confirm!`;
     const url = `https://wa.me/${MY_WHATSAPP}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -101,9 +135,8 @@ export default function Home() {
                         <span className="text-4xl">✅</span>
                     </div>
                     <h2 className="text-2xl font-bold text-gray-800">Order Placed!</h2>
-                    <p className="text-gray-600 mt-2">Your Order ID:</p>
                     
-                    {/* ✅ FIXED SECTION: HIGH CONTRAST ID BOX */}
+                    {/* High Contrast Order ID */}
                     <div className="bg-blue-50 border-2 border-blue-200 text-blue-900 p-4 rounded-lg font-mono text-2xl font-black tracking-widest my-4 select-all shadow-sm">
                         {orderId}
                     </div>
@@ -114,9 +147,9 @@ export default function Home() {
                         onClick={sendWhatsApp}
                         className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2"
                     >
-                        <span>💬</span> Send to WhatsApp
+                        <span>💬</span> Send Location to WhatsApp
                     </button>
-                    <p className="text-xs text-gray-400 mt-3">Click above to notify us instantly!</p>
+                    <p className="text-xs text-gray-400 mt-3">Click above to send your precise location!</p>
                 </div>
             ) : (
                 <>
@@ -133,6 +166,8 @@ export default function Home() {
                         <input type="hidden" name="_template" value="table" />
                         <input type="hidden" name="Order_ID" value="" />
                         <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
+                        {/* 📍 Hidden input to send full address to email */}
+                        <input type="hidden" name="Address_Full" value="" />
 
                         <div className="mb-6">
                             <label className="block text-gray-700 font-bold mb-2">1. Upload your PDF</label>
@@ -171,15 +206,50 @@ export default function Home() {
                                 <p className="text-gray-500 text-sm">{result.pages} Pages x ₹3/page</p>
                             </div>
 
-                            <div className="mb-6">
-                                <label className="block text-gray-700 font-bold mb-2">2. Your Phone Number</label>
+                            {/* 📍 NEW: Address Section */}
+                            <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+                                <h3 className="font-bold text-gray-700 mb-3 text-sm uppercase tracking-wide">📍 Delivery Details</h3>
+                                
+                                {/* GPS Button */}
+                                <button 
+                                    type="button"
+                                    onClick={getLocation}
+                                    className={`w-full py-2 mb-4 rounded border flex items-center justify-center gap-2 text-sm font-medium transition ${locationLink ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}
+                                >
+                                    {locLoading ? "Getting Location..." : (locationLink ? "✅ Location Pinned!" : "📍 Use Current Location")}
+                                </button>
+
+                                {/* Address Fields */}
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Hostel / Building Name"
+                                        className="col-span-2 p-2 border rounded text-sm"
+                                        value={addressDetails.hostel}
+                                        onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Room / Flat No."
+                                        className="p-2 border rounded text-sm"
+                                        value={addressDetails.room}
+                                        onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})}
+                                    />
+                                    <input 
+                                        type="tel" 
+                                        name="Phone_Number"
+                                        placeholder="Phone Number"
+                                        className="p-2 border rounded text-sm"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                    />
+                                </div>
                                 <input 
-                                type="tel" 
-                                name="Phone_Number"
-                                placeholder="e.g. 9876543210"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-lg rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-3"
+                                    type="text" 
+                                    placeholder="Instructions (e.g., Leave at gate)"
+                                    className="w-full p-2 border rounded text-sm"
+                                    value={addressDetails.instructions}
+                                    onChange={(e) => setAddressDetails({...addressDetails, instructions: e.target.value})}
                                 />
                             </div>
 

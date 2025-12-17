@@ -22,7 +22,7 @@ export default function Home() {
   // 🔴 CHANGE THIS TO YOUR EMAIL
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
   // 🔴 CHANGE THIS TO YOUR NUMBER (No + sign)
-  const MY_WHATSAPP = "917670964247"; 
+  const MY_WHATSAPP = "917995460846"; 
 
   const generateOrderId = () => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);

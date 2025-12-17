@@ -7,20 +7,17 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [orderStatus, setOrderStatus] = useState("");
   const [phone, setPhone] = useState(""); 
-  const [orderId, setOrderId] = useState(null); // Store the unique ID
+  const [orderId, setOrderId] = useState(null);
 
   const formRef = useRef(null);
 
   // ✅ YOUR EMAIL
   const MY_EMAIL = "charanabbagoni926@gmail.com"; 
   
-  // ✅ YOUR WHATSAPP NUMBER (For customers to message you)
-  // Format: CountryCode + Number (e.g., 919876543210)
-  const MY_WHATSAPP = "917670964247"; 
+  // ✅ YOUR WHATSAPP NUMBER
+  const MY_WHATSAPP = "919876543210"; 
 
-  // 1. Helper function to generate a Unique Order ID
   const generateOrderId = () => {
-    // Generates something like "TPS-8492"
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     return `TPS-${randomNum}`;
   };
@@ -64,12 +61,10 @@ export default function Home() {
     if (!file) return alert("Please upload a file first!");
     if (!phone || phone.length < 10) return alert("Please enter a valid Phone Number!");
     
-    // Generate the ID right before sending
     const newId = generateOrderId();
     setOrderId(newId);
     setOrderStatus("Sending...");
 
-    // Update the hidden input with the new ID manually before submit
     const orderIdInput = formRef.current.querySelector('input[name="Order_ID"]');
     if (orderIdInput) orderIdInput.value = newId;
 
@@ -79,11 +74,9 @@ export default function Home() {
     
     setTimeout(() => {
         setOrderStatus("Sent!");
-        // We do NOT alert here anymore, we show the Success Screen instead
     }, 2000);
   };
 
-  // Helper to open WhatsApp with the details
   const sendWhatsApp = () => {
     if (!orderId) return;
     const message = `Hello! I just placed Order *${orderId}*.\n\n📄 File: ${file.name}\n💰 Amount: ₹${result.cost}\n\nPlease confirm when printed!`;
@@ -95,7 +88,6 @@ export default function Home() {
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
         
-        {/* Header */}
         <div className="bg-blue-600 p-6 text-center">
           <h1 className="text-3xl font-bold text-white">Tirupati Print Service 🖨️</h1>
           <p className="text-blue-100 mt-2">Fast & Affordable Document Printing</p>
@@ -103,7 +95,6 @@ export default function Home() {
 
         <div className="p-8">
             
-            {/* If Order is SENT, show Success Screen */}
             {orderStatus === "Sent!" ? (
                 <div className="text-center animate-fade-in-up">
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -111,9 +102,12 @@ export default function Home() {
                     </div>
                     <h2 className="text-2xl font-bold text-gray-800">Order Placed!</h2>
                     <p className="text-gray-600 mt-2">Your Order ID:</p>
-                    <div className="bg-gray-100 p-3 rounded-lg font-mono text-xl font-bold tracking-widest my-2 select-all">
+                    
+                    {/* ✅ FIXED SECTION: HIGH CONTRAST ID BOX */}
+                    <div className="bg-blue-50 border-2 border-blue-200 text-blue-900 p-4 rounded-lg font-mono text-2xl font-black tracking-widest my-4 select-all shadow-sm">
                         {orderId}
                     </div>
+
                     <p className="text-sm text-gray-500 mb-6">Current Status: <span className="text-blue-600 font-bold">Doc Sent 📨</span></p>
 
                     <button 
@@ -125,7 +119,6 @@ export default function Home() {
                     <p className="text-xs text-gray-400 mt-3">Click above to notify us instantly!</p>
                 </div>
             ) : (
-                /* OTHERWISE, show the Normal Form */
                 <>
                     <iframe name="hidden_iframe" style={{display:'none'}}></iframe>
                     <form 
@@ -138,12 +131,9 @@ export default function Home() {
                         <input type="hidden" name="_subject" value={`New Order ${orderId || ''}`} />
                         <input type="hidden" name="_captcha" value="false" />
                         <input type="hidden" name="_template" value="table" />
-                        
-                        {/* Hidden Inputs for Email Details */}
-                        <input type="hidden" name="Order_ID" value="" /> {/* Will be filled by JS */}
+                        <input type="hidden" name="Order_ID" value="" />
                         <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
 
-                        {/* Step 1: File Upload */}
                         <div className="mb-6">
                             <label className="block text-gray-700 font-bold mb-2">1. Upload your PDF</label>
                             <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:bg-gray-50 transition text-center cursor-pointer group">
@@ -197,21 +187,3 @@ export default function Home() {
                                 type="button" 
                                 onClick={handleOrderSubmit}
                                 disabled={orderStatus === "Sending..."}
-                                className="w-full bg-blue-600 hover:bg-blue-700 font-bold py-4 rounded-lg shadow-lg text-white transition transform active:scale-95"
-                            >
-                                {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
-                            </button>
-                            </div>
-                        )}
-                    </form>
-                </>
-            )}
-        </div>
-        
-        <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
-          <p className="text-xs text-gray-500">© 2024 Tirupati Print Service</p>
-        </div>
-      </div>
-    </div>
-  );
-}

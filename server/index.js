@@ -1,33 +1,45 @@
 const express = require('express');
-const cors = require('cors');
 const multer = require('multer');
-const { PDFDocument } = require('pdf-lib');
-// No more Nodemailer!
+const pdf = require('pdf-parse');
+const cors = require('cors'); // ✅ IMPORT CORS
 
 const app = express();
-app.use(cors()); 
+const port = process.env.PORT || 3001;
 
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+// ✅ CRITICAL FIX: Allow frontend to connect
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
+}));
 
-// Only one route left: Counting Pages
-app.post('/count', upload.single('myFile'), async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-        
-        const pdfDoc = await PDFDocument.load(req.file.buffer);
-        const pages = pdfDoc.getPageCount();
-        const cost = pages * 3; // ₹3 per page
-        
-        console.log(`Analyzing file: ${pages} pages`);
-        res.json({ pages: pages, cost: cost });
-    } catch (error) {
-        console.error("PDF Error:", error);
-        res.status(500).json({ error: "Failed to analyze PDF" });
-    }
+const upload = multer({ storage: multer.memoryStorage() });
+
+// 1. Health Check Route (To wake up server)
+app.get('/', (req, res) => {
+  res.json({ message: "✅ Backend is ONLINE and Running!" });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 SERVER RUNNING ON PORT ${PORT}`);
+// 2. Count Pages Route
+app.post('/count', upload.single('myFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const data = await pdf(req.file.buffer);
+    const pages = data.numpages;
+    const cost = pages * 3; // ₹3 per page
+
+    console.log(`Processed: ${pages} pages. Cost: ₹${cost}`);
+    res.json({ pages: pages, cost: cost });
+
+  } catch (error) {
+    console.error("PDF Error:", error);
+    res.status(500).json({ error: "Could not read PDF file." });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
 });

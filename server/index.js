@@ -3,24 +3,24 @@ const express = require('express');
 const multer = require('multer');
 const pdf = require('pdf-parse');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
-const mongoose = require('mongoose'); // Database tool
+const mongoose = require('mongoose');
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-// 1. Connect to MongoDB (The Secure Way)
+// 1. Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Database Connected!"))
   .catch(err => console.error("❌ Database Error:", err));
 
-// 2. Define what an "Order" looks like
+// 2. Define Order Schema
 const OrderSchema = new mongoose.Schema({
   orderId: String,
   phone: String,
   details: String,
   address: String,
   fileName: String,
+  fileData: Buffer, // Stores the PDF binary
   createdAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', OrderSchema);
@@ -28,19 +28,9 @@ const Order = mongoose.model('Order', OrderSchema);
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 const upload = multer({ storage: multer.memoryStorage() });
 
-// 3. Email Setup (Also Secure)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: 'charanabbagoni926@gmail.com',
-    pass: process.env.EMAIL_PASS // <--- Hidden Password
-  }
-});
-
 app.get('/', (req, res) => res.json({ message: "Print Shop Backend is Live!" }));
 
+// 3. Count Pages Route
 app.post('/count', upload.single('myFile'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file" });
@@ -51,35 +41,54 @@ app.post('/count', upload.single('myFile'), async (req, res) => {
   }
 });
 
-// 4. The "Master" Order Route (Database + Email)
+// 4. Place Order Route (Saves to DB, Skips Email)
 app.post('/order', upload.single('attachment'), async (req, res) => {
   try {
     const { orderId, phone, details, address } = req.body;
 
-    // A. Save to Database
     const newOrder = new Order({
       orderId,
       phone,
       details,
       address,
-      fileName: req.file.originalname
+      fileName: req.file.originalname,
+      fileData: req.file.buffer // Saving file to DB
     });
+    
     await newOrder.save();
     console.log(`💾 Order ${orderId} saved to DB!`);
 
-    // B. Send Email
-    await transporter.sendMail({
-      from: '"Print Shop" <charanabbagoni926@gmail.com>',
-      to: 'charanabbagoni926@gmail.com',
-      subject: `🔥 New Order: ${orderId}`,
-      text: `Order ID: ${orderId}\nPhone: ${phone}\nDetails: ${details}\n\nAddress:\n${address}`,
-      attachments: [{ filename: req.file.originalname, content: req.file.buffer }]
-    });
+    // ✅ We removed the Email code to prevent crashes
+    res.json({ success: true, message: "Order Saved Successfully!" });
 
-    res.json({ success: true, message: "Order Saved & Sent!" });
   } catch (error) {
     console.error("Order Error:", error);
-    res.status(500).json({ success: false, message: "Failed to process order." });
+    res.status(500).json({ success: false, message: "Failed to save order." });
+  }
+});
+
+// 5. 🆕 ADMIN: Get All Orders (Without the heavy PDF file)
+app.get('/orders', async (req, res) => {
+  try {
+    // Fetch orders but hide the PDF data to make it fast
+    const orders = await Order.find().select('-fileData').sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: "Could not fetch orders" });
+  }
+});
+
+// 6. 🆕 ADMIN: Download PDF
+app.get('/order/:id/download', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).send("Order not found");
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${order.fileName}`);
+    res.send(order.fileData);
+  } catch (error) {
+    res.status(500).send("Error downloading file");
   }
 });
 

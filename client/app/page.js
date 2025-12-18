@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -18,12 +18,8 @@ export default function Home() {
   });
   const [locLoading, setLocLoading] = useState(false);
 
-  const formRef = useRef(null);
-
-  // ✅ YOUR WEB3FORMS ACCESS KEY
+  // ✅ YOUR KEYS
   const ACCESS_KEY = "57e361ef-3817-4d9f-95c1-e5cdaf4a7d3f"; 
-
-  // ✅ YOUR WHATSAPP NUMBER
   const MY_WHATSAPP = "917995460846"; 
 
   const generateOrderId = () => {
@@ -40,7 +36,6 @@ export default function Home() {
     }
   };
 
-  // ✅ FIXED: This function now generates a working Google Maps link
   const getLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -48,8 +43,8 @@ export default function Home() {
     }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition((position) => {
-      // This is the correct format that opens in the Google Maps App
-      const link = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+      // ✅ Correct Google Maps Link
+      const link = `http://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
       setLocationLink(link);
       setLocLoading(false);
     }, () => {
@@ -81,39 +76,59 @@ export default function Home() {
       }
     } catch (error) {
       alert("💤 The server is waking up! Please wait 30 seconds and click 'Check Price' again.");
-      console.error(error);
     }
     setLoading(false);
   };
 
-  const handleOrderSubmit = () => {
+  // ✅ NEW: ROBUST SUBMISSION FUNCTION
+  const handleOrderSubmit = async () => {
     if (!file) return alert("Please upload a file first!");
     if (!phone || phone.length < 10) return alert("Please enter a valid Phone Number!");
     if (!addressDetails.hostel || !addressDetails.room) return alert("Please enter your Hostel/Building and Room Number.");
 
     const newId = generateOrderId();
-    setOrderId(newId);
     setOrderStatus("Sending...");
 
-    const orderIdInput = formRef.current.querySelector('input[name="subject"]');
-    if (orderIdInput) orderIdInput.value = `New Order ${newId}`;
-
-    const fullAddress = `
-    📍 GPS: ${locationLink || "Not Shared"}
-    🏠 Address: ${addressDetails.hostel}, Room ${addressDetails.room}
-    📝 Note: ${addressDetails.instructions || "None"}
-    `;
+    // 1. Prepare Data
+    const formData = new FormData();
+    formData.append("access_key", ACCESS_KEY);
+    formData.append("subject", `New Order ${newId}`);
+    formData.append("from_name", "Tirupati Print App");
+    formData.append("Order_ID", newId);
+    formData.append("Phone", phone);
+    formData.append("Cost", `₹${result.cost}`);
+    formData.append("Pages", result.pages);
     
-    const addressInput = formRef.current.querySelector('input[name="Address_Full"]');
-    if (addressInput) addressInput.value = fullAddress;
-
-    if(formRef.current) {
-        formRef.current.submit();
-    }
+    const fullAddress = `📍 GPS: ${locationLink || "Not Shared"} | 🏠 ${addressDetails.hostel}, Room ${addressDetails.room} | 📝 ${addressDetails.instructions}`;
+    formData.append("Address", fullAddress);
     
-    setTimeout(() => {
+    // Attach the file directly
+    formData.append("attachment", file);
+
+    try {
+      // 2. Send Data using JavaScript Fetch
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Success!
+        setOrderId(newId);
         setOrderStatus("Sent!");
-    }, 2500);
+      } else {
+        // Error from Web3Forms
+        alert("❌ Email Error: " + data.message);
+        setOrderStatus("");
+      }
+
+    } catch (error) {
+      alert("❌ Network Error. Please try again.");
+      console.error(error);
+      setOrderStatus("");
+    }
   };
 
   const sendWhatsApp = () => {
@@ -127,7 +142,6 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 flex items-center justify-center p-4 sm:p-6 font-sans text-gray-800">
       <div className="w-full max-w-lg bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
         
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-white opacity-10 blur-xl"></div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight relative z-10">Tirupati Print Service</h1>
@@ -160,129 +174,111 @@ export default function Home() {
                 </div>
             ) : (
                 <>
-                    <iframe name="hidden_iframe" style={{display:'none'}}></iframe>
-                    {/* Web3Forms Configuration */}
-                    <form 
-                        ref={formRef}
-                        action="https://api.web3forms.com/submit" 
-                        method="POST" 
-                        encType="multipart/form-data"
-                        target="hidden_iframe"
-                    >
-                        <input type="hidden" name="access_key" value={ACCESS_KEY} />
-                        <input type="hidden" name="subject" value={`New Order ${orderId || ''}`} />
-                        <input type="hidden" name="from_name" value="Tirupati Print App" />
-                        
-                        <input type="hidden" name="Order_ID" value={orderId} />
-                        <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
-                        <input type="hidden" name="Address_Full" value="" />
-
-                        {/* File Upload Section */}
-                        <div className="mb-8">
-                            <label className="block text-gray-700 font-bold mb-3 text-sm uppercase tracking-wide">1. Upload File</label>
-                            <div className="relative group">
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-300 to-purple-300 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
-                                <div className="relative border-2 border-dashed border-indigo-200 bg-indigo-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-white transition-colors">
-                                    <input 
-                                        type="file" 
-                                        name="attachment" 
-                                        accept=".pdf" 
-                                        onChange={handleFileChange} 
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    <div className="text-indigo-400 group-hover:text-indigo-600 transition-colors">
-                                        <div className="text-4xl mb-3">📂</div>
-                                        <p className="font-semibold text-gray-700">
-                                            {file ? <span className="text-indigo-600">{file.name}</span> : "Tap to Upload PDF"}
-                                        </p>
-                                        <p className="text-xs text-gray-400 mt-1">{file ? "File selected" : "Max 25MB"}</p>
-                                    </div>
+                    {/* Step 1: File Upload */}
+                    <div className="mb-8">
+                        <label className="block text-gray-700 font-bold mb-3 text-sm uppercase tracking-wide">1. Upload File</label>
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-300 to-purple-300 rounded-xl blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
+                            <div className="relative border-2 border-dashed border-indigo-200 bg-indigo-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-white transition-colors">
+                                <input 
+                                    type="file" 
+                                    name="attachment" 
+                                    accept=".pdf" 
+                                    onChange={handleFileChange} 
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <div className="text-indigo-400 group-hover:text-indigo-600 transition-colors">
+                                    <div className="text-4xl mb-3">📂</div>
+                                    <p className="font-semibold text-gray-700">
+                                        {file ? <span className="text-indigo-600">{file.name}</span> : "Tap to Upload PDF"}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">{file ? "File selected" : "Max 25MB"}</p>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {!result && (
-                            <button 
-                            onClick={calculatePrice}
-                            disabled={loading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                            {loading ? "Calculating Price..." : "Check Price ⚡"}
-                            </button>
-                        )}
+                    {!result && (
+                        <button 
+                        onClick={calculatePrice}
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                        {loading ? "Calculating Price..." : "Check Price ⚡"}
+                        </button>
+                    )}
 
-                        {result && (
-                            <div className="animate-fade-in-up">
-                                {/* Price Card */}
-                                <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-8 text-center shadow-lg relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-bl-lg">BEST VALUE</div>
-                                    <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Estimated Cost</p>
-                                    <h2 className="text-5xl font-black text-gray-800 tracking-tight">₹{result.cost}</h2>
-                                    <div className="inline-block bg-gray-100 rounded-full px-4 py-1 mt-3">
-                                        <p className="text-gray-600 text-xs font-medium">{result.pages} Pages × ₹3/page</p>
-                                    </div>
+                    {result && (
+                        <div className="animate-fade-in-up">
+                            {/* Price Card */}
+                            <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-8 text-center shadow-lg relative overflow-hidden">
+                                <div className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-bl-lg">BEST VALUE</div>
+                                <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-1">Estimated Cost</p>
+                                <h2 className="text-5xl font-black text-gray-800 tracking-tight">₹{result.cost}</h2>
+                                <div className="inline-block bg-gray-100 rounded-full px-4 py-1 mt-3">
+                                    <p className="text-gray-600 text-xs font-medium">{result.pages} Pages × ₹3/page</p>
                                 </div>
+                            </div>
 
-                                {/* Address Section */}
-                                <div className="space-y-4 mb-8">
-                                    <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">2. Delivery Details</h3>
-                                    
-                                    <button 
-                                        type="button"
-                                        onClick={getLocation}
-                                        className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition duration-200 ${
-                                            locationLink 
-                                            ? 'bg-green-50 border-green-200 text-green-700' 
-                                            : 'border-blue-100 text-blue-600 hover:bg-blue-50'
-                                        }`}
-                                    >
-                                        {locLoading ? "Detecting..." : (locationLink ? "✅ Location Pinned" : "📍 Use Current Location")}
-                                    </button>
+                            {/* Address Section */}
+                            <div className="space-y-4 mb-8">
+                                <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wide">2. Delivery Details</h3>
+                                
+                                <button 
+                                    type="button"
+                                    onClick={getLocation}
+                                    className={`w-full py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition duration-200 ${
+                                        locationLink 
+                                        ? 'bg-green-50 border-green-200 text-green-700' 
+                                        : 'border-blue-100 text-blue-600 hover:bg-blue-50'
+                                    }`}
+                                >
+                                    {locLoading ? "Detecting..." : (locationLink ? "✅ Location Pinned" : "📍 Use Current Location")}
+                                </button>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input 
-                                            type="text" 
-                                            placeholder="Hostel / Building"
-                                            className="col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
-                                            value={addressDetails.hostel}
-                                            onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})}
-                                        />
-                                        <input 
-                                            type="text" 
-                                            placeholder="Room No"
-                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
-                                            value={addressDetails.room}
-                                            onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})}
-                                        />
-                                        <input 
-                                            type="tel" 
-                                            name="Phone_Number"
-                                            placeholder="Phone No"
-                                            className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                        />
-                                    </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <input 
                                         type="text" 
-                                        placeholder="Note (e.g. Leave at gate)"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
-                                        value={addressDetails.instructions}
-                                        onChange={(e) => setAddressDetails({...addressDetails, instructions: e.target.value})}
+                                        placeholder="Hostel / Building"
+                                        className="col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
+                                        value={addressDetails.hostel}
+                                        onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})}
+                                    />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Room No"
+                                        className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
+                                        value={addressDetails.room}
+                                        onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})}
+                                    />
+                                    <input 
+                                        type="tel" 
+                                        name="Phone_Number"
+                                        placeholder="Phone No"
+                                        className="bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
                                     />
                                 </div>
-
-                                <button
-                                    type="button" 
-                                    onClick={handleOrderSubmit}
-                                    disabled={orderStatus === "Sending..."}
-                                    className="w-full bg-gray-900 text-white font-bold py-5 rounded-xl shadow-xl hover:shadow-2xl hover:bg-black transition transform active:scale-95"
-                                >
-                                    {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
-                                </button>
+                                <input 
+                                    type="text" 
+                                    placeholder="Note (e.g. Leave at gate)"
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-900"
+                                    value={addressDetails.instructions}
+                                    onChange={(e) => setAddressDetails({...addressDetails, instructions: e.target.value})}
+                                />
                             </div>
-                        )}
-                    </form>
+
+                            <button
+                                type="button" 
+                                onClick={handleOrderSubmit}
+                                disabled={orderStatus === "Sending..."}
+                                className="w-full bg-gray-900 text-white font-bold py-5 rounded-xl shadow-xl hover:shadow-2xl hover:bg-black transition transform active:scale-95"
+                            >
+                                {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order Now"}
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
         </div>

@@ -1,193 +1,89 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function Home() {
-  const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [orderStatus, setOrderStatus] = useState("");
-  const [phone, setPhone] = useState(""); 
-  const [orderId, setOrderId] = useState(null);
-  
-  const [locationLink, setLocationLink] = useState("");
-  const [addressDetails, setAddressDetails] = useState({
-    hostel: "",
-    room: "",
-    instructions: ""
-  });
-  const [locLoading, setLocLoading] = useState(false);
+export default function AdminPanel() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Your WhatsApp Number
-  const MY_WHATSAPP = "917995460846"; 
+  // Simple "Password" to protect the page
+  const [authorized, setAuthorized] = useState(false);
+  const [password, setPassword] = useState("");
 
-  const generateOrderId = () => {
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    return `TPS-${randomNum}`;
-  };
+  useEffect(() => {
+    if (authorized) fetchOrders();
+  }, [authorized]);
 
-  const handleFileChange = (e) => {
-    if(e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setResult(null); 
-      setOrderStatus("");
-      setOrderId(null);
-    }
-  };
-
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported.");
-      return;
-    }
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition((position) => {
-      const link = `http://googleusercontent.com/maps.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
-      setLocationLink(link);
-      setLocLoading(false);
-    }, () => {
-      alert("Unable to retrieve location.");
-      setLocLoading(false);
-    });
-  };
-
-  const calculatePrice = async (e) => {
-    e.preventDefault(); 
-    if (!file) return alert("Please select a PDF file first!");
-    setLoading(true);
-    setResult(null); 
-
-    const formData = new FormData();
-    formData.append('myFile', file);
-
+  const fetchOrders = async () => {
     try {
-      // 1. Calculate Price
-      const response = await fetch('https://myprintshopbackend.onrender.com/count', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (data.error) {
-        alert("⚠️ Server Error: " + data.error);
-      } else {
-        setResult(data);
-      }
+      const res = await fetch('https://myprintshopbackend.onrender.com/orders');
+      const data = await res.json();
+      setOrders(data);
+      setLoading(false);
     } catch (error) {
-      alert("Server is waking up. Try again in 10 seconds.");
-    }
-    setLoading(false);
-  };
-
-  // ✅ THE IMPORTANT PART: Sends Data to Your DB + Email
-  const handleOrderSubmit = async () => {
-    if (!file) return alert("Please upload a file!");
-    if (!phone || phone.length < 10) return alert("Enter valid Phone Number");
-    if (!addressDetails.hostel) return alert("Enter Hostel/Room");
-
-    const newId = generateOrderId();
-    setOrderStatus("Sending...");
-
-    const fullAddress = `📍 GPS: ${locationLink || "Not Shared"} | 🏠 ${addressDetails.hostel}, Room ${addressDetails.room} | 📝 ${addressDetails.instructions}`;
-
-    const formData = new FormData();
-    formData.append("orderId", newId);
-    formData.append("phone", phone);
-    formData.append("details", `Cost: ₹${result.cost} | Pages: ${result.pages}`);
-    formData.append("address", fullAddress);
-    formData.append("attachment", file); 
-
-    try {
-      // 🚀 Send to YOUR Secure Backend
-      const response = await fetch("https://myprintshopbackend.onrender.com/order", {
-        method: "POST",
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setOrderId(newId);
-        setOrderStatus("Sent!");
-      } else {
-        alert("❌ Error: " + data.message);
-        setOrderStatus("");
-      }
-
-    } catch (error) {
-      alert("❌ Network Error. Please try again.");
-      console.error(error);
-      setOrderStatus("");
+      alert("Failed to load orders");
     }
   };
 
-  const sendWhatsApp = () => {
-    if (!orderId) return;
-    const message = `Hello! Order *${orderId}*.\nFile: ${file.name}\nAmount: ₹${result.cost}\nLoc: ${addressDetails.hostel}, ${addressDetails.room}`;
-    const url = `https://wa.me/${MY_WHATSAPP}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+  const checkPassword = () => {
+    if (password === "admin123") { // Change this if you want
+      setAuthorized(true);
+    } else {
+      alert("Wrong Password");
+    }
   };
+
+  const downloadPdf = (id) => {
+    window.open(`https://myprintshopbackend.onrender.com/order/${id}/download`, '_blank');
+  };
+
+  if (!authorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded shadow-lg text-center">
+          <h1 className="text-2xl font-bold mb-4">Admin Login</h1>
+          <input 
+            type="password" 
+            placeholder="Enter Password" 
+            className="border p-2 rounded mb-4 w-full"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button onClick={checkPassword} className="bg-blue-600 text-white px-4 py-2 rounded font-bold w-full">
+            Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans text-gray-800">
-      <div className="w-full max-w-lg bg-white rounded-xl shadow-xl overflow-hidden">
-        <div className="bg-blue-600 p-6 text-center text-white">
-          <h1 className="text-2xl font-bold">Tirupati Print Service</h1>
-        </div>
-
-        <div className="p-6">
-            {orderStatus === "Sent!" ? (
-                <div className="text-center animate-fade-in-up">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-4xl">✅</span>
-                    </div>
-                    <h2 className="text-2xl font-bold mb-2">Order Success!</h2>
-                    <p className="text-gray-500 mb-4">Saved to Database & Emailed.</p>
-                    <div className="bg-gray-800 text-white p-4 rounded mb-4">
-                        <p className="text-xs uppercase text-gray-400">Order ID</p>
-                        <p className="font-mono text-2xl font-bold">{orderId}</p>
-                    </div>
-                    <button onClick={sendWhatsApp} className="w-full bg-green-500 text-white font-bold py-3 rounded shadow hover:bg-green-600">
-                        💬 Send on WhatsApp
-                    </button>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">📋 Order Manager</h1>
+        
+        {loading ? <p>Loading orders...</p> : (
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <div key={order._id} className="bg-white p-6 rounded-lg shadow border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-blue-600">{order.orderId}</h2>
+                  <p className="text-gray-600 text-sm">{new Date(order.createdAt).toLocaleString()}</p>
+                  <p className="mt-2 font-medium">📞 {order.phone}</p>
+                  <p className="text-gray-500 text-sm mt-1">{order.details}</p>
+                  <div className="mt-2 bg-gray-100 p-2 rounded text-sm text-gray-700">
+                    {order.address}
+                  </div>
                 </div>
-            ) : (
-                <>
-                    <div className="mb-6">
-                        <label className="block font-bold mb-2">1. Upload PDF</label>
-                        <input type="file" accept=".pdf" onChange={handleFileChange} className="w-full p-2 border rounded bg-gray-50" />
-                    </div>
-
-                    {!result && (
-                        <button onClick={calculatePrice} disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded shadow hover:bg-blue-700">
-                        {loading ? "Calculating..." : "Check Price"}
-                        </button>
-                    )}
-
-                    {result && (
-                        <div className="animate-fade-in-up">
-                            <div className="bg-green-50 p-4 rounded text-center mb-6 border border-green-200">
-                                <h2 className="text-3xl font-bold text-green-700">₹{result.cost}</h2>
-                                <p className="text-sm text-green-800">{result.pages} Pages</p>
-                            </div>
-
-                            <div className="space-y-3 mb-6">
-                                <button onClick={getLocation} className="w-full py-2 border-2 border-blue-500 text-blue-600 rounded font-bold">
-                                    {locLoading ? "..." : (locationLink ? "✅ Location Pinned" : "📍 Pin Location")}
-                                </button>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input type="text" placeholder="Hostel" className="border p-2 rounded" onChange={(e) => setAddressDetails({...addressDetails, hostel: e.target.value})} />
-                                    <input type="text" placeholder="Room" className="border p-2 rounded" onChange={(e) => setAddressDetails({...addressDetails, room: e.target.value})} />
-                                </div>
-                                <input type="tel" placeholder="Phone Number" className="w-full border p-2 rounded" onChange={(e) => setPhone(e.target.value)} />
-                            </div>
-
-                            <button onClick={handleOrderSubmit} disabled={orderStatus === "Sending..."} className="w-full bg-black text-white font-bold py-4 rounded text-lg shadow-lg">
-                                {orderStatus === "Sending..." ? "Processing..." : "🚀 Place Order"}
-                            </button>
-                        </div>
-                    )}
-                </>
-            )}
-        </div>
+                
+                <button 
+                  onClick={() => downloadPdf(order._id)}
+                  className="mt-4 sm:mt-0 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded shadow flex items-center gap-2"
+                >
+                  📥 Download PDF
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

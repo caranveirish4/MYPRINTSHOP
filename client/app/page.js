@@ -20,10 +20,10 @@ export default function Home() {
 
   const formRef = useRef(null);
 
-  // ✅ YOUR WEB3FORMS ACCESS KEY (Inserted)
+  // ✅ YOUR WEB3FORMS ACCESS KEY
   const ACCESS_KEY = "57e361ef-3817-4d9f-95c1-e5cdaf4a7d3f"; 
 
-  // ✅ YOUR WHATSAPP NUMBER (Inserted with 91 code)
+  // ✅ YOUR WHATSAPP NUMBER
   const MY_WHATSAPP = "917995460846"; 
 
   const generateOrderId = () => {
@@ -40,6 +40,7 @@ export default function Home() {
     }
   };
 
+  // ✅ FIXED: This function now generates a working Google Maps link
   const getLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -47,7 +48,8 @@ export default function Home() {
     }
     setLocLoading(true);
     navigator.geolocation.getCurrentPosition((position) => {
-      const link = `http://googleusercontent.com/maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`;
+      // This is the correct format that opens in the Google Maps App
+      const link = `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
       setLocationLink(link);
       setLocLoading(false);
     }, () => {
@@ -159,7 +161,7 @@ export default function Home() {
             ) : (
                 <>
                     <iframe name="hidden_iframe" style={{display:'none'}}></iframe>
-                    {/* ✅ WEB3FORMS CONFIGURATION */}
+                    {/* Web3Forms Configuration */}
                     <form 
                         ref={formRef}
                         action="https://api.web3forms.com/submit" 
@@ -175,7 +177,7 @@ export default function Home() {
                         <input type="hidden" name="Order_Details" value={`Cost: ₹${result?.cost || 0} | Pages: ${result?.pages || 0}`} />
                         <input type="hidden" name="Address_Full" value="" />
 
-                        {/* Step 1: File Upload */}
+                        {/* File Upload Section */}
                         <div className="mb-8">
                             <label className="block text-gray-700 font-bold mb-3 text-sm uppercase tracking-wide">1. Upload File</label>
                             <div className="relative group">
